@@ -1,0 +1,181 @@
+其实很简单，解决依赖就完事
+
+两个步骤   1 升级自带python    2 安装homeassistant
+
+话不多说   ，开始打命令请把脑子丢掉，直接打命令吧
+1 升级自带python
+# 安装一些必要的东西
+# 解决依赖
+apt update
+apt upgrade -y
+apt-get install -y sqlite*
+apt-get install -y zlib*
+apt-get install -y arm-linux-gnueabihf*
+apt-get install -y build-essential
+apt-get install -y libsqlite3-dev
+apt-get install -y gcc
+apt-get install -y libffi-dev
+apt-get install -y python3-dev
+apt-get install -y libssl-dev
+apt-get install -y sqlite3-dev
+apt-get install -y sqlite-dev
+补充环境
+apt-get install python3-dev python3-pip python3-venv zlib1g-dev libbz2-dev libssl-dev libncurses5-dev libsqlite3-dev libreadline-dev tk-dev libgdbm-dev libdb-dev libpcap-dev xz-utils libexpat1-dev liblzma-dev libffi-dev libc6-dev openssl sqlite3 tcl8.6-dev uuid-dev
+
+# 安装python3
+wget https://www.python.org/ftp/python/3.7.4/Python-3.7.4.tgz
+tar xvzf Python-3.7.4.tgz
+mkdir /usr/local/python374
+cd Python-3.7.4
+./configure --prefix=/usr/local/python374
+make && make install  
+
+这时候你的新的py已经安装了(鉴于是针对小白的，什么虚拟环境什么docker统统丢掉，如果你有耐心请花费大量时间去研究这两个东西，用好了其实也很简单)
+
+# 先安装一些，避免hass预运行报错
+/usr/local/python374/bin/pip3 install aiohttp_cors
+/usr/local/python374/bin/pip3 install sqlalchemy
+/usr/local/python374/bin/pip3 install --upgrade pip
+
+/usr/local/python374/bin/pip3 install frontend_assets （添加上吧要不后期会出错）
+
+返回根目录
+cd
+
+# 安装ha
+/usr/local/python374/bin/pip3 install homeassistant==0.114.4
+
+
+
+#安装完成之后，先手动运行hass完善一下环境(耗时比较长)
+/usr/local/python374/bin/hass
+# 打开浏览器访问  IP:8123
+# 直到出现了ha的登录页面为止
+
+# systemctl的service文件编辑,添加到系统服务
+sudo nano -w /etc/systemd/system/home-assistant@root.service
+
+# 复制粘贴如下内容
+
+[Unit]
+Description=Home Assistant
+After=network-online.target
+[Service]
+Type=simple
+User=%i
+ExecStart=/usr/local/python374/bin/hass
+[Install]
+WantedBy=multi-user.target
+
+Ctrl + X ，Y ，Enter 保存退出
+# 重载systemctl
+sudo systemctl --system daemon-reload
+# 服务自启动
+sudo systemctl enable home-assistant@root
+# 开启服务
+sudo systemctl start home-assistant@root
+
+下面这些东西是你报错之后才要来看的东西，如果没问题请忽略吧
+# 解决 Command "python setup.py egg_info" failed ...问题
+/usr/local/python374/bin/pip3 install --upgrade setuptools
+
+# 解决No module named 'hass_frontend'问题
+/usr/local/python374/bin/python3 -m pip install home-assistant-defusedxml
+
+# Cannot uninstall ‘PyYAML’. It is a distutils installed project and thus we cannot accurately
+不知道为什么但是到
+cd /usr/lib/python3/dist-packages
+目录下，删除一个文件 文件名包含 PyYAML和egg的一个文件，就可以安装了
+
+
+# pip安装时出现”return Command ‘lsb_release -a’ returned non-zero exit status 1″—–执行
+rm /usr/bin/lsb_release
+
+# no module named ‘_ctypes–执行
+apt-get install libffi-dev
+
+最后感谢大神yys235（本教程以为大神的为基础填了些坑） 和 5.88固件制作者
+
+
+https://www.right.com.cn/forum/thread-3721551-1-1.html
+
+
+安装esphome
+----------------------------------------------------------------------------------------------------------------------
+我是从网上查的这样用的 
+先查看一下pip3有没有正确安装
+/usr/local/python374/bin/pip3 --version
+安装esphome
+/usr/local/python374/bin/pip3 install esphome
+安装浏览器工具
+/usr/local/python374/bin/pip3 install tornado esptool
+运行esphome
+/usr/local/python374/bin/esphome config/ dashboard
+/usr/local/python374/bin/nohup esphome config/ dashboard
+最后
+输入http://IP:6052/, 就能看到主界面
+
+安装过程中问题
+如果提示有未升级的提示，建议升级一下在这里插入图片描述
+升级命令：
+sudo apt-get dist-upgrade
+如果提示关于setuptools
+在这里插入图片描述
+运行一下命令升级
+pip install --upgrade setuptools
+安装完毕之后再运行一下安装的esphome步骤
+上述的问题已经解决好了
+运行下载esphome和浏览器的工具是不会报错的。
+
+
+----------------------------------------------------------------------------------------------------------------------
+安装Mosquitto mqtt服务器
+1.下载mosquitto需要的依赖
+sudo apt-get install libssl-dev
+sudo apt-get install uuid-dev
+sudo apt-get install cmake
+第2步：下载mosquitto并解压，现在mosquitto官网最新的版本是1.5.1
+
+tar xzvf mosquitto-1.5.1.tar.gz
+
+第3步：编译
+
+cd mosquitto-1.5.1/
+
+make
+
+make install
+
+第4步：启动mosquitto
+
+mosquitto -v
+
+安装注意点
+【1】编译找不到openssl/ssl.h
+    【解决方法】——安装openssl
+sudo apt-get install libssl-dev
+【2】编译过程找不到ares.h
+sudo apt-get install libc-ares-dev
+【3】 编译过程找不到uuid/uuid.h
+sudo apt-get install uuid-dev
+【4】使用过程中找不到libmosquitto.so.1
+error while loading shared libraries: libmosquitto.so.1: cannot open shared object file: No such file or directory
+    【解决方法】——修改libmosquitto.so位置
+# 创建链接
+sudo ln -s /usr/local/lib/libmosquitto.so.1 /usr/lib/libmosquitto.so.1
+# 更新动态链接库
+sudo ldconfig
+【5】make: g++：命令未找到  
+    【解决方法】
+    安装g++编译器
+sudo apt-get install g++
+Invalid user 'mosquitto'.
+
+ 
+
+[root@localhost src]# ./mosquitto
+1437558553: Error: Invalid user 'mosquitto'.
+两种解决办法：
+（1）修改配置文件:mosquitto.conf ，增加登录的用户，例如当前登录用户为root
+（1）执行命令增加当前用户：
+ adduser mosquitto
